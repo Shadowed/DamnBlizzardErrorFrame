@@ -2,6 +2,7 @@ local L = {
 	["Last"] = "Last",
 	["First"] = "First",
 	["No errors yet!"] = "No errors yet!",
+	["No locals to dump"] = "No locals to dump",
 }
 
 -- Blizzards error handler isn't loaded until all addons are parsed, this overrides the default one and queues the errors for the time being
@@ -19,10 +20,23 @@ local function hookErrorFrame()
 
 	-- Stop text highlighting
 	ScriptErrorsFrameScrollFrameText:SetScript("OnEditFocusGained", nil)
+
 	local Orig_ScriptErrorsFrame_Update = ScriptErrorsFrame_Update
 	ScriptErrorsFrame_Update = function(...)
+		-- Sometimes the locals table does not have an entry for an index, which can cause an argument #6 error
+		-- in Blizzard_DebugTools.lua:430 and then cause a C stack overflow, this will prevent that
+		local index = ScriptErrorsFrame.index
+		if( not index or not ScriptErrorsFrame.order[index] ) then
+			index = #(ScriptErrorsFrame.order)
+		end
+
+		if( index > 0 ) then
+			ScriptErrorsFrame.locals[index] = ScriptErrorsFrame.locals[index] or L["No locals to dump"]
+		end
+		
 		Orig_ScriptErrorsFrame_Update(...)
 		
+		-- Stop text highlighting again
 		ScriptErrorsFrameScrollFrameText:HighlightText(0, 0)
 	end
 	
@@ -147,7 +161,14 @@ frame:SetScript("OnEvent", function(self, event, addon)
 	-- For some weird reason, we can't call LoadAddon now, so if we have any queued errors will load debug tools
 	-- and let that handle dumping them
 	if( event == "PLAYER_LOGIN" ) then
-		if( errorsQueued and #(errorsQueued) > 0 ) then
+		if( errorsQueued ) then
+			-- No errors queued, just unhook quickly
+			if( #(errorsQueued) == 0 ) then
+				errorsQueued = nil
+				seterrorhandler(_ERRORMESSAGE)
+				return
+			end
+			
 			-- Load Blizzards debug tools
 			LoadAddOn("Blizzard_DebugTools")
 			if( not IsAddOnLoaded("Blizzard_DebugTools") ) then
@@ -186,5 +207,5 @@ seterrorhandler(function(message)
 		table.insert(errorsQueued, {message = message, stack = debugstack(2), locals = debuglocals(4), date = date()})
 	end
 	
-	return messages
+	return message
 end)
