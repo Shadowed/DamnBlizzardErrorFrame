@@ -1,0 +1,6 @@
+## Interface: 30200
+## Title: Damn Blizzard Error Frame
+## Notes: Improves the Blizzard error frame
+## Author: Shadowed
+
+DamnBlizzardErrorFrame.lua
