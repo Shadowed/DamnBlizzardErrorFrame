@@ -132,7 +132,7 @@ local function dumpErrors()
 		local index = ScriptErrorsFrame.seen[messageStack]
 		if( index ) then
 			ScriptErrorsFrame.count[index] = ScriptErrorsFrame.count[index] + 1
-			ScriptErrorsFrame.messages[index] = data.mesasge
+			ScriptErrorsFrame.messages[index] = data.message
 			ScriptErrorsFrame.times[index] = data.date
 			ScriptErrorsFrame.locals[index] = data.locals
 		else
